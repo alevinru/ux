@@ -15,22 +15,22 @@
     
     
     try {
-        
-        while (1) {
+        $count=0;
+        while ($count++<10) {
             $result = $transformator->transformToXML($information);
             $information -> loadXML($result);
-            die ($result);
 
-/*            
-            $command = $information -> documentElement -> nodeName ();
-            
-            switch ($command) {
-                case 'output':
-                    // print $i
-                case 'save':
+            foreach ($information->childNodes as $node)
+                if ($node->nodeType == XML_PI_NODE && $node->target =='ux'){
+                    $information->removeChild ($node);
+                    switch ($node->data) {
+                        case 'print':
+                            die($information->saveXML());
+                    }
             }
-*/
+
         }
+        die ("count exceed\n");
     } catch (Exception $e) {
         @print $result;
     }
@@ -47,30 +47,35 @@
 
     function userDataXML() {
         $result = new DOMDocument('1.0', 'utf-8');
-        $root = $result->createElement ('userinput');
+        $root = $result->createElement ('request');
         $root->setAttribute ('xmlns', 'http://unact.net/xml/ux');
-        $root->setAttribute ('method', $_SERVER['REQUEST_METHOD']);
-        $root->setAttribute ('content-type', $_SERVER['CONTENT_TYPE']);
+        $root->setAttribute ('http-method', $_SERVER['REQUEST_METHOD']);
         $result->appendChild ($root);
         
         domElementApplyArray ($root, $_COOKIE, 'cookie');
         domElementApplyArray ($root, $_GET, 'GET');
         
-        if ($_SERVER['CONTENT_TYPE']=='application/x-www-form-urlencoded')
-            domElementApplyArray ($root, $_POST, 'POST');
-        else {        
-            $rawData=file_get_contents("php://input");
-            if ($rawData)
-                $rawNode=$root->appendChild($result->createElement ('rawpost'));
-                if ($_SERVER['CONTENT_TYPE']=='text/xml') try {
-                    $rawXML=new DOMDocument();
-                    $rawXML->loadXML($rawData);
-                    $rawNode->appendChild($result->importNode($rawXML->documentElement,true));
-                } catch (Exception $e) {
-                    die($e->getMessage());
-                }
-                else
-                    $rawNode->nodeValue=$rawData;
+        if (isset($_SERVER['CONTENT_TYPE'])) {
+            $root->setAttribute ('content-type', $_SERVER['CONTENT_TYPE']);
+            
+            if ($_SERVER['CONTENT_TYPE']=='application/x-www-form-urlencoded')
+                domElementApplyArray ($root, $_POST, 'POST');
+            else {        
+                $rawData=file_get_contents("php://input");
+                if ($rawData)
+                    $rawNode=$root->appendChild($result->createElement ('rawpost'));
+                    if ($_SERVER['CONTENT_TYPE']=='text/xml') try {
+                            $rawXML=new DOMDocument();
+                            $rawXML->loadXML($rawData);
+                            if (!$rawXML->documentElement->getAttribute('xmlns'))
+                                $rawXML->documentElement->setAttribute('xmlns','http://unact.net/xml/unknown');
+                            $rawNode->appendChild($result->importNode($rawXML->documentElement,true));
+                        } catch (Exception $e) {
+                            die($e->getMessage());
+                    }
+                    else
+                        $rawNode->nodeValue=$rawData;
+            }
         }
         
         return $result;
@@ -90,7 +95,8 @@
 >
 
     <xsl:template match="/">
-        <xsl:copy-of select="."/>
+        <xsl:processing-instruction name="ux">print</xsl:processing-instruction>
+        <xsl:copy-of select="*"/>
     </xsl:template>
 
 
