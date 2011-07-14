@@ -38,15 +38,10 @@
 
     function domElementApplyArray($domElement, $array, $appliedName = false) {
         if (count($array)) {
-/*            
-            $e = $appliedName
-               ? $domElement->ownerDocument->createElement ($appliedName)
-               : $domElement;
-            
-            if ($appliedName) $domElement->appendChild ($e);
-*/            
             foreach ($array as $name => $value)
-                $domElement->appendChild ($domElement->ownerDocument->createElement($appliedName,$value))->setAttribute('name',$name);
+                $domElement->appendChild (
+                    $domElement->ownerDocument->createElement($appliedName,$value)
+                )->setAttribute('name',$name);
         }
     }
 
