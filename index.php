@@ -12,27 +12,38 @@
     $transformator->importStylesheet($transformation);   
  
     $information = userDataXML();
+    $informationTransformed = new DOMDocument ('1.0', 'utf-8');
     
     
     try {
-        $count=0;
-        while ($count++<10) {
-            $result = $transformator->transformToXML($information);
-            $information -> loadXML($result);
-
-            foreach ($information->childNodes as $node)
+        $countinue=1;
+        while ($countinue--) {
+            $resultText = $transformator->transformToXML($information);
+            $informationTransformed -> loadXML($resultText);
+            foreach ($informationTransformed->childNodes as $node)
                 if ($node->nodeType == XML_PI_NODE && $node->target =='ux'){
-                    $information->removeChild ($node);
-                    switch ($node->data) {
+                    $countinue=1;
+                    $informationTransformed->removeChild ($node);
+                    $uxcommand=explode (' ', $node->data);
+                    switch ($uxcommand[0]) {
+                        case 'continue':
+                            $information=$informationTransformed;
+                            break;
                         case 'print':
-                            die($information->saveXML());
+                            if (isset($uxcommand[1])) header('content-type:'.$uxcommand[1]);
+                            die($informationTransformed->saveXML());
+                            break;
+                        case 'save':
+                            $informationTransformed->save('data/'.$uxcommand[1]);
+                            break;
+                        default:
+                            die('unknown ux command');
                     }
             }
-
         }
-        die ("count exceed\n");
+        die ($resultText);
     } catch (Exception $e) {
-        @print $result;
+        var_dump ($e);
     }
 
 
@@ -95,7 +106,7 @@
 >
 
     <xsl:template match="/">
-        <xsl:processing-instruction name="ux">print</xsl:processing-instruction>
+        <xsl:processing-instruction name="ux1">print</xsl:processing-instruction>
         <xsl:copy-of select="*"/>
     </xsl:template>
 
